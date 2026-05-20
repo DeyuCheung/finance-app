@@ -18,7 +18,6 @@ export default function RootLayout({
           padding: 0,
           fontFamily:
             "-apple-system, BlinkMacSystemFont, sans-serif",
-          background: "#fff",
         }}
       >
         {children}
