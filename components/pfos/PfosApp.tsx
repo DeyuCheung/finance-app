@@ -19,6 +19,8 @@ export default function PfosApp() {
   const [expAmount, setExpAmount] = useState("");
   const [debtName, setDebtName] = useState("");
   const [debtAmount, setDebtAmount] = useState("");
+  const [aiSummary, setAiSummary] = useState("");
+  const [loadingAI, setLoadingAI] = useState(false);
 
   /* ===== SAFE MONEY ===== */
   const toMoney = (n: number) => Math.round(n * 100) / 100;
@@ -48,6 +50,20 @@ export default function PfosApp() {
   const totalExpense = expenses.reduce((s, e) => s + e.amount, 0);
 
   const cash = toMoney(baseCash + totalIncome - totalExpense);
+  const totalDebt = debts.reduce((s, d) => s + d.amount, 0);
+
+const riskScore = Math.min(
+  100,
+  (totalDebt / (cash + totalIncome + 1)) * 60 +
+  (totalExpense / (totalIncome + 1)) * 40
+);
+
+const getRiskLevel = (s: number) => {
+  if (s < 30) return "🟢 LOW";
+  if (s < 60) return "🟡 MEDIUM";
+  if (s < 80) return "🟠 HIGH";
+  return "🔴 CRITICAL";
+};
 
   /* ===== ADD ===== */
   const addIncome = () => {
@@ -79,6 +95,20 @@ export default function PfosApp() {
     setDebtName("");
     setDebtAmount("");
   };
+  const generateAI = async () => {
+  setLoadingAI(true);
+
+  const res = await fetch("/api/ai-summary", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ incomes, expenses }),
+  });
+
+  const data = await res.json();
+
+  setAiSummary(data.text || data.error || "");
+  setLoadingAI(false);
+};
 
   /* ===== UI ===== */
   const input = {
@@ -195,6 +225,20 @@ export default function PfosApp() {
         <input style={input} value={debtAmount} onChange={(e) => setDebtAmount(e.target.value)} placeholder="金额" />
         <button onClick={addDebt}>添加</button>
       </div>
+
+      <div style={card}>
+  <h3>🤖 AI 周报</h3>
+
+  <button onClick={generateAI} disabled={loadingAI}>
+    {loadingAI ? "生成中..." : "生成AI总结"}
+  </button>
+
+  {aiSummary && (
+    <div style={{ marginTop: 10, whiteSpace: "pre-line" }}>
+      {aiSummary}
+    </div>
+  )}
+</div>
 
       {/* RESET */}
       <button
